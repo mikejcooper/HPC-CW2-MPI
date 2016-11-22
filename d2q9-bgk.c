@@ -20,6 +20,7 @@ int main(int argc, char* argv[])
     int y_split = 4;
     int x_split = 1;
     
+    printf("here \n");
     
     /* parse the command line */
     if (argc != 3)
@@ -33,12 +34,12 @@ int main(int argc, char* argv[])
     }
     
     /* initialise our data structures and load values from file */
-    tot_cells = initialise_params(paramfile, &params);
+    initialise_params(paramfile, &params);
+
     mpi(argc, argv, params, &params_mpi, y_split,x_split);
     
     printf("INDEX: t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.top_y, params_mpi.bottom_y, params_mpi.left_x, params_mpi.right_x, params_mpi.mpi_rank);
     printf("t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.nb_top_y, params_mpi.nb_bottom_y, params_mpi.nb_left_x, params_mpi.nb_right_x, params_mpi.mpi_rank);
-    // params_mpi = (mpi_index){1,128,64,0,128,0,0,1,1,128,64};
 
     
     tot_cells = initialise_mpi(obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels, params_mpi);
@@ -51,21 +52,9 @@ int main(int argc, char* argv[])
     
     for (int tt = 0; tt < params.maxIters; tt++)
     {
-        // for (int ii = 0; ii < params_mpi.ny; ii++)
-        // {
-        //     printf("\n index : %d \n", ii * params_mpi.nx);
-        //     for (int jj = 0; jj < params_mpi.nx; jj++)
-        //     {
-        //         printf("%.12f ", cells[ii * params_mpi.nx + jj].speeds[0]);
-        //     }
-            
-        // }
-
         halo_exchange(params, cells, params_mpi, mpi_halos_snd, mpi_halos_rcv);
         if (params_mpi.top_y == params.ny)
-        {
             accelerate_flow(params, cells, obstacles, params_mpi);
-        }
         av_vels[tt] = collision_mpi(params, cells, tmp_cells, obstacles, &tot_cells, params_mpi, mpi_halos_rcv);
         t_speed* temp = cells;
         cells = tmp_cells;
@@ -130,12 +119,6 @@ void mpi(int argc, char* argv[], const t_param params, mpi_index* params_mpi_arg
    int name_len;
    MPI_Get_processor_name(processor_name, &name_len);
    
-   
-   //Print off a hello world message
-   // printf("Hello world from processor %s, rank %d"
-   //        " out of %d processors\n",
-   //        processor_name, mpi_rank, size);
-   
    if(mpi_rank == 0){
        int y_top = params.ny - (y_split - 1) * (params.ny / y_split);
        int y_bottom = params.ny - y_split * (params.ny / y_split);
@@ -146,8 +129,6 @@ void mpi(int argc, char* argv[], const t_param params, mpi_index* params_mpi_arg
        get_neighbours(&params_mpi, params, y_split, x_split);
        distribute_indexes(params, size, y_split, x_split);
    } else {
-       
-       
        MPI_Recv(&params_mpi, 11, MPI_INT, 0, 1, MPI_COMM_WORLD, &status);
        params_mpi.mpi_rank = mpi_rank;
        get_neighbours(&params_mpi, params, y_split, x_split);
@@ -160,8 +141,8 @@ void mpi(int argc, char* argv[], const t_param params, mpi_index* params_mpi_arg
 void accelerate_flow(const t_param params, t_speed* cells, int* obstacles, mpi_index mpi_index_current)
 {
     /* compute weighting factors */
-    float w2 = 1.0f / 72000.0f;
-    float w1 = 4.0f * w2;
+  float w1 = params.density * params.accel / 9.0f;
+  float w2 = params.density * params.accel / 36.0f;
 
     /* modify the 2nd row of the grid */
     int ii = mpi_index_current.ny - 2;
@@ -173,9 +154,9 @@ void accelerate_flow(const t_param params, t_speed* cells, int* obstacles, mpi_i
         /* if the cell is not occupied and
          ** we don't send a negative density */
         if (!obstacles[index]
-            && (cells[index].speeds[3] - w1) > 0.0
-            && (cells[index].speeds[6] - w2) > 0.0
-            && (cells[index].speeds[7] - w2) > 0.0)
+            && (cells[index].speeds[3] - w1) > 0.0f
+            && (cells[index].speeds[6] - w2) > 0.0f
+            && (cells[index].speeds[7] - w2) > 0.0f)
         {
             /* increase 'east-side' densities */
             cells[index].speeds[1] += w1;
@@ -214,7 +195,6 @@ void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, m
             {
                 for(int k = 0; k<9; k++){
                     mpi_halo_snd.bottom_y[sendbuf_y_bottom_i].speeds[k] = cells[index].speeds[k];
-                    
                 }
                 sendbuf_y_bottom_i++;
             }
@@ -222,7 +202,6 @@ void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, m
             {
                 for(int k = 0; k<9; k++){
                     mpi_halo_snd.top_y[sendbuf_y_top_i].speeds[k] = cells[index].speeds[k];
-                    
                 }
                 sendbuf_y_top_i++;
             }
@@ -329,22 +308,20 @@ int initialise_mpi(const char* obstaclefile,
     int    blocked;        /* indicates whether a cell is blocked by an obstacle */
     int    retval;         /* to hold return value for checking */
     
-    int y_length = mpi_indexA.top_y - mpi_indexA.bottom_y;
-    int x_length = mpi_indexA.right_x - mpi_indexA.left_x;
     
     /* main grid */
-    *cells_ptr = (t_speed*)malloc(sizeof(t_speed) * (params->nx * params->ny));
+    *cells_ptr = (t_speed*)malloc(sizeof(t_speed) * (mpi_indexA.nx * mpi_indexA.ny));
     
     /* 'helper' grid, used as scratch space */
-    *tmp_cells_ptr = (t_speed*)malloc(sizeof(t_speed) * (params->nx * params->ny));
+    *tmp_cells_ptr = (t_speed*)malloc(sizeof(t_speed) * (mpi_indexA.nx * mpi_indexA.ny));
     
     /* the map of obstacles */
-    *obstacles_ptr = malloc(sizeof(int) * (params->nx * params->ny));
+    *obstacles_ptr = malloc(sizeof(int) * (mpi_indexA.nx * mpi_indexA.ny));
     
     /* initialise densities */
-    float w0 = params->density * 4.0 / 9.0;
-    float w1 = params->density      / 9.0;
-    float w2 = params->density      / 36.0;
+    float w0 = params->density * 4.0f / 9.0f;
+    float w1 = params->density      / 9.0f;
+    float w2 = params->density      / 36.0f;
     
     // ny, nx = 128
     for (int ii = 0; ii < mpi_indexA.ny; ii++)
@@ -440,7 +417,8 @@ int initialise_params(const char* paramfile, t_param* params)
     retval = fscanf(fp, "%f\n", &(params->density));
     retval = fscanf(fp, "%f\n", &(params->accel));
     retval = fscanf(fp, "%f\n", &(params->omega));
-    
+
+
     /* and close up the file */
     fclose(fp);
     
@@ -489,7 +467,7 @@ float total_density(const t_param params, t_speed* cells)
 
 void mpi_final_state(const t_param params, t_speed* cells, int* obstacles, float* av_vels, mpi_index params_mpi, int num_threads, int x_split){
   MPI_Status status;
-  int tile_size = params.nx*params.ny;
+  int tile_size = (params_mpi.nx * params_mpi.ny);
   float av_vels_acc[params.maxIters];
   t_speed* cells_holder = malloc(sizeof(t_speed) * params.nx * (params_mpi.top_y - params_mpi.bottom_y));
   
@@ -513,15 +491,15 @@ void mpi_final_state(const t_param params, t_speed* cells, int* obstacles, float
     }
 
     if (x_split > 1){
-         for (int ii = 0; ii < params_mpi.top_y - params_mpi.bottom_y; ii++)
+            for (int ii = 0; ii < params_mpi.ny; ii++)
             {
-                for (int jj = 0; jj < params_mpi.right_x - params_mpi.left_x; jj++)
+                for (int jj = 0; jj < params_mpi.nx; jj++)
                 {
-                    int index = ii * params.nx + jj;
+                    int index_new = ii * params.nx + (jj + params_mpi.left_x);
+                    int index= ii * params.nx + jj;
                     for(int k = 0; k<9; k++)
                     {
-                        cells_holder[index - params_mpi.bottom_y * params.nx - params_mpi.left_x * jj + params_mpi.left_x].speeds[k] = cells[index].speeds[k];
-                        // cells_holder[index - (params_mpi.mpi_rank - (params_mpi.mpi_rank % x_split)) * (params.nx / x_split)].speeds[k] = cells[index].speeds[k];
+                        cells_holder[index_new].speeds[k] = cells[index].speeds[k];
                     }
                 }
             }
@@ -531,17 +509,6 @@ void mpi_final_state(const t_param params, t_speed* cells, int* obstacles, float
       write_values(params, cells, obstacles, av_vels, fp_fs, params_mpi);
     }
 
-    
-   
-       for (int ii = 0; ii < params_mpi.ny; ii++)
-        {
-            printf("\n index : %d \n", ii * params_mpi.nx);
-            for (int jj = 0; jj < params_mpi.nx; jj++)
-            {
-                printf("%.12f ", cells[ii * params_mpi.nx + jj].speeds[0]);
-            }
-            
-        }
 
     for(int source = 1; source < num_threads; source++){
 
@@ -551,27 +518,18 @@ void mpi_final_state(const t_param params, t_speed* cells, int* obstacles, float
         MPI_Recv(&params_mpi, 11, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
         printf("\n recieved: %d\n", params_mpi.mpi_rank);
 
-        for (int ii = 0; ii < params_mpi.ny; ii++)
-        {
-            printf("\n index : %d \n", ii * params_mpi.nx);
-            for (int jj = 0; jj < params_mpi.nx; jj++)
-            {
-                printf("%.12f ", cells[ii * params_mpi.nx + jj].speeds[0]);
-            }
-            
-        }
-
       // if x segment, store in temp. 
         if (x_split > 1)
         {
-            for (int ii = 0; ii < params_mpi.top_y - params_mpi.bottom_y; ii++)
+            for (int ii = 0; ii < params_mpi.ny; ii++)
             {
-                for (int jj = 0; jj < params_mpi.right_x - params_mpi.left_x; jj++)
+                for (int jj = 0; jj < params_mpi.nx; jj++)
                 {
-                    int index = ii * params.nx + jj;
+                    int index_new = ii * params.nx + (jj + params_mpi.left_x);
+                    int index= ii * params.nx + jj;
                     for(int k = 0; k<9; k++)
                     {
-                        cells_holder[index - params_mpi.bottom_y * params.nx - params_mpi.left_x * jj + params_mpi.left_x].speeds[k] = cells[index].speeds[k];
+                        cells_holder[index_new].speeds[k] = cells[index].speeds[k];
                     }
                 }
             }
