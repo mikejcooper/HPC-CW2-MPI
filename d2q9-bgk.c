@@ -17,11 +17,9 @@ int main(int argc, char* argv[])
     mpi_halo mpi_halos_snd;
     mpi_halo mpi_halos_rcv;
     mpi_index params_mpi;
-    int y_split = 4;
+    int y_split = 32;
     int x_split = 1;
-    
-    printf("here \n");
-    
+      
     /* parse the command line */
     if (argc != 3)
     {
@@ -38,50 +36,20 @@ int main(int argc, char* argv[])
 
     mpi(argc, argv, params, &params_mpi, y_split,x_split);
     
-    printf("INDEX: t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.top_y, params_mpi.bottom_y, params_mpi.left_x, params_mpi.right_x, params_mpi.mpi_rank);
-    printf("t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.nb_top_y, params_mpi.nb_bottom_y, params_mpi.nb_left_x, params_mpi.nb_right_x, params_mpi.mpi_rank);
+    //printf("INDEX: t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.top_y, params_mpi.bottom_y, params_mpi.left_x, params_mpi.right_x, params_mpi.mpi_rank);
+    //printf("t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.nb_top_y, params_mpi.nb_bottom_y, params_mpi.nb_left_x, params_mpi.nb_right_x, params_mpi.mpi_rank);
 
     
     tot_cells = initialise_mpi(obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels, params_mpi);
-    initialise_mpi_halos(params_mpi,&mpi_halos_snd, &mpi_halos_rcv);
+    initialise_mpi_halos(params_mpi,&mpi_halos_snd, &mpi_halos_rcv, cells);
      
     /* iterate for maxIters timesteps */
     gettimeofday(&timstr, NULL);
     tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
-
-    // Fill y buffer top and bottom
-    int sendbuf_y_top_i = 0;
-    int sendbuf_y_bottom_i = 0;
-    
-    for (int ii = 0; ii < params_mpi.ny; ii++)
-    {
-        int y_s = (ii == 0) ? (ii + params_mpi.ny - 1) : (ii - 1); // could move top
-        int y_n = (ii + 1) % params_mpi.ny; // Could move top
-        
-        for (int jj = 0; jj < params_mpi.nx; jj++)
-        {
-            int index = ii * params_mpi.nx + jj;
-            if(ii == 0)
-            {
-                mpi_halos_snd.bottom_y[sendbuf_y_bottom_i].speeds[0] = cells[index].speeds[4];
-                mpi_halos_snd.bottom_y[sendbuf_y_bottom_i].speeds[1] = cells[index].speeds[7];
-                mpi_halos_snd.bottom_y[sendbuf_y_bottom_i].speeds[2] = cells[index].speeds[8];
-                sendbuf_y_bottom_i++;
-            }
-            else if(ii == params_mpi.ny - 1)
-            {
-                mpi_halos_snd.top_y[sendbuf_y_top_i].speeds[0] = cells[index].speeds[2];
-                mpi_halos_snd.top_y[sendbuf_y_top_i].speeds[1] = cells[index].speeds[5];
-                mpi_halos_snd.top_y[sendbuf_y_top_i].speeds[2] = cells[index].speeds[6];
-                sendbuf_y_top_i++;
-            }
-        }
-    }
-    
     
     for (int tt = 0; tt < params.maxIters; tt++)
     {
-        halo_exchange(params, cells, params_mpi, mpi_halos_snd, mpi_halos_rcv);
+        halo_exchange(params, cells, params_mpi, mpi_halos_snd, mpi_halos_rcv, y_split);
         if (params_mpi.top_y == params.ny)
             accelerate_flow(params, cells, obstacles, params_mpi);
         av_vels[tt] = collision_mpi(params, cells, tmp_cells, obstacles, &tot_cells, params_mpi, mpi_halos_rcv, mpi_halos_snd);
@@ -94,7 +62,6 @@ int main(int argc, char* argv[])
         printf("tot density: %.12E\n", total_density(params, cells));
 #endif
     }
-    
     gettimeofday(&timstr, NULL);
     toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
     getrusage(RUSAGE_SELF, &ru);
@@ -105,11 +72,12 @@ int main(int argc, char* argv[])
     
     /* write final values and free memory */
     // Synchronise nodes here?
-    
-    printf("==done==\n");
-    printf("Elapsed time:\t\t\t%.6lf (s)\n", toc - tic);
-    printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
-    printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
+    if(params_mpi.mpi_rank == 0){
+      printf("==done==\n");
+      printf("Elapsed time:\t\t\t%.6lf (s)\n", toc - tic);
+      printf("Elapsed user CPU time:\t\t%.6lf (s)\n", usrtim);
+      printf("Elapsed system CPU time:\t%.6lf (s)\n", systim);
+    }
     
     mpi_final_state(params, cells, obstacles, av_vels, params_mpi, x_split * y_split, x_split);
     // Finalize the MPI environment.
@@ -170,8 +138,9 @@ void mpi(int argc, char* argv[], const t_param params, mpi_index* params_mpi_arg
 void accelerate_flow(const t_param params, t_speed* cells, int* obstacles, mpi_index mpi_index_current)
 {
     /* compute weighting factors */
-  float w1 = params.density * params.accel / 9.0f;
   float w2 = params.density * params.accel / 36.0f;
+  float w1 = 4 * w2;
+
 
     /* modify the 2nd row of the grid */
     int ii = mpi_index_current.ny - 2;
@@ -201,67 +170,116 @@ void accelerate_flow(const t_param params, t_speed* cells, int* obstacles, mpi_i
 }
 
 
-void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, mpi_halo mpi_halo_snd, mpi_halo mpi_halo_rcv)
+void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, mpi_halo mpi_halo_snd, mpi_halo mpi_halo_rcv, int y_split)
 {
    MPI_Status status;     /* struct used by MPI_Recv */
    MPI_Request req;
-   MPI_Win win;
+
+  //  MPI_Win win1, win2;
+  //   printf("here \n");
+  //   float a = 1;
+  //   float b = 0;
 
 
-   // if (params_mpi.mpi_rank == 0){
-   //     float a[2] = {0,0};
-   //     float b[2];
-   //     MPI_Win_create(a,2, MPI_FLOAT, MPI_INFO_NULL, MPI_COMM_WORLD, &win)
-   //     MPI_Get(&mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
-   //     MPI_Get(&b, 2, MPI_FLOAT, params_mpi.nb_bottom_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
-   //     printf("rank: %d rcv: %d\n",params_mpi.mpi_rank, b[1]);
-   // }
-   // if else (params_mpi.mpi_rank == 1){
-   //    float a[2] = {0,1};
-   //    float b[2];
-   //    MPI_Win_create(a,2, MPI_FLOAT, MPI_INFO_NULL, MPI_COMM_WORLD, &win)
-   //    MPI_Get(&b, 2, MPI_FLOAT, params_mpi.nb_bottom_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
-   //    printf("rank: %d rcv: %d\n",params_mpi.mpi_rank, b[1]);
-   // }
 
+  // if (params_mpi.mpi_rank == 0) {
+  //     MPI_Win_create(&a,sizeof(float), 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win1);
 
+  // }
+  // if(params_mpi.mpi_rank == 1){
+  //     MPI_Win_create(MPI_BOTTOM, 0, 1, MPI_INFO_NULL,MPI_COMM_WORLD, &win1);
+  // }
+
+  //  MPI_Win_fence(0,win1);  
+  //  if (params_mpi.mpi_rank == 1){
+      
+  //     int source = 0;
+  //     MPI_Get(&b, 1, MPI_FLOAT, source, 0, 1, MPI_FLOAT, win1);
+  //  }
+  //   MPI_Win_fence(0,win1);  
     
+  //   printf("rank: %d rcv: %f\n",params_mpi.mpi_rank, b);
+  //   MPI_Win_free(&win1);
+  //   MPI_Win_free(&win2);
+
+
+
+   // if ((params_mpi.mpi_rank % 2) != 0) {  /* this is _NOT_ the master process */
+       
+   //     // // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
+       
+   //    if(params_mpi.mpi_rank != (y_split - 1)){
+   //      MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+   //      MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+   //     // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
+   //      MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+   //      MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+   //     } else {
+   //        MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+   //        MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+   //     }
+       
+   //     // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
+
+       
+       
+   // }
+   // else {             /* i.e. this is the master process */
+   //    if(params_mpi.mpi_rank != 0){
+   //     MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+   //     MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+   //     // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
+       
+   //      MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+   //      MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+   //     } else {
+   //      MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+   //      MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+   //     }
+   // }
+
+
+
+
    if ((params_mpi.mpi_rank % 2) != 0) {  /* this is _NOT_ the master process */
        
        // // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
        
-       
-       MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-       MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+        MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+        MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
        // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
-       
-       MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-       MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-       // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
-
-       // MPI_Get(&mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
+        MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+        MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+        
 
        
        
    }
    else {             /* i.e. this is the master process */
-       
        MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
        MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
        // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
        
-       MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-       MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+        MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+        MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+        
+        // MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+        //         int dest, int sendtag,
+        //         void *recvbuf, int recvcount, MPI_Datatype recvtype,
+        //         int source, int recvtag,
+        //         MPI_Comm comm, MPI_Status *status)
 
-       // float a[2] = {0,0};
-       // MPI_Win_create(a,2, MPI_FLOAT, MPI_INFO_NULL, MPI_COMM_WORLD, &win)
+        // MPI_Sendrecv(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
+        //              mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
+        //              MPI_COMM_WORLD, &status);
 
-
-       
+        // MPI_Sendrecv(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
+        //              mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
+        //              MPI_COMM_WORLD, &status);
    }
 }
 
-void initialise_mpi_halos(mpi_index mpi_params, mpi_halo* mpi_halo_snd, mpi_halo* mpi_halo_rcv){
+void initialise_mpi_halos(mpi_index mpi_params, mpi_halo* mpi_halo_snd, mpi_halo* mpi_halo_rcv, t_speed* cells){
     
     mpi_halo_snd->top_y = malloc(sizeof(t_buffer) * (mpi_params.right_x - mpi_params.left_x));
     mpi_halo_snd->bottom_y = malloc(sizeof(t_buffer) * (mpi_params.right_x - mpi_params.left_x));
@@ -272,6 +290,29 @@ void initialise_mpi_halos(mpi_index mpi_params, mpi_halo* mpi_halo_snd, mpi_halo
     mpi_halo_rcv->bottom_y = malloc(sizeof(t_buffer) * (mpi_params.right_x - mpi_params.left_x));
     // mpi_halo_rcv->right_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
     // mpi_halo_rcv->left_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
+
+    for (int ii = 0; ii < mpi_params.ny; ii++)
+    {
+        int y_s = (ii == 0) ? (ii + mpi_params.ny - 1) : (ii - 1); // could move top
+        int y_n = (ii + 1) % mpi_params.ny; // Could move top
+        
+        for (int jj = 0; jj < mpi_params.nx; jj++)
+        {
+            int index = ii * mpi_params.nx + jj;
+            if(ii == 0)
+            {
+                mpi_halo_snd->bottom_y[jj].speeds[0] = cells[index].speeds[4];
+                mpi_halo_snd->bottom_y[jj].speeds[1] = cells[index].speeds[7];
+                mpi_halo_snd->bottom_y[jj].speeds[2] = cells[index].speeds[8];
+            }
+            else if(ii == mpi_params.ny - 1)
+            {
+                mpi_halo_snd->top_y[jj].speeds[0] = cells[index].speeds[2];
+                mpi_halo_snd->top_y[jj].speeds[1] = cells[index].speeds[5];
+                mpi_halo_snd->top_y[jj].speeds[2] = cells[index].speeds[6];
+            }
+        }
+    }
 }
 
 
@@ -493,7 +534,6 @@ void mpi_final_state(const t_param params, t_speed* cells, int* obstacles, float
         MPI_Recv(obstacles, tile_size, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
         MPI_Recv(av_vels, params.maxIters, MPI_FLOAT, source, 1, MPI_COMM_WORLD, &status);
         MPI_Recv(&params_mpi, 11, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
-        printf("\n recieved: %d\n", params_mpi.mpi_rank);
 
       // if x segment, store in temp. 
         if (x_split > 1)
@@ -541,7 +581,6 @@ void mpi_final_state(const t_param params, t_speed* cells, int* obstacles, float
 
 int write_values(const t_param params, t_speed* cells, int* obstacles, float* av_vels, FILE* fp_fs, mpi_index params_mpi)
 {
-    printf("WRITE VALUES\n");
     const float c_sq = 1.0 / 3.0; /* sq. of speed of sound */
     float local_density;         /* per grid cell sum of densities */
     float pressure;              /* fluid pressure in grid cell */

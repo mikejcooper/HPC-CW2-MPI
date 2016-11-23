@@ -144,16 +144,16 @@ void die(const char* message, const int line, const char* file);
 void usage(const char* exe);
 
 void mpi(int argc, char* argv[], const t_param params, mpi_index* params_mpi, int y_split, int x_split);
-void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, mpi_halo mpi_halo_snd, mpi_halo mpi_halo_rcv);
+void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, mpi_halo mpi_halo_snd, mpi_halo mpi_halo_rcv, int y_split);
 int initialise_mpi(const char* obstaclefile,
                    t_param* params, t_speed** cells_ptr, t_speed** tmp_cells_ptr,
                    int** obstacles_ptr, float** av_vels_ptr, mpi_index mpi_indexA);
-void initialise_mpi_halos(mpi_index mpi_indexA, mpi_halo* mpi_halo_snd, mpi_halo* mpi_halo_rcv);
+void initialise_mpi_halos(mpi_index mpi_indexA, mpi_halo* mpi_halo_snd, mpi_halo* mpi_halo_rcv, t_speed* cells);
 
 void halo_left_x(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* left_x_buffer, int* obstacles, int y_n, int y_s, int x_e, int x_w, int ii, int jj);
 void halo_right_x(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* left_x_buffer, int* obstacles, int y_n, int y_s, int x_e, int x_w, int ii, int jj);
-void halo_top_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii);
-void halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii);
+float halo_top_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii);
+float halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii);
 
 
 float collision_mpi(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, const int* tot_cells, mpi_index mpi_params, mpi_halo mpi_halos, mpi_halo mpi_halos_snd);

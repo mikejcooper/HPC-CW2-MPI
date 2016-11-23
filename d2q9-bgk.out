@@ -1,48 +1,42 @@
-Running on host node47-021
-Time is Wed Nov 23 14:44:08 GMT 2016
+Running on host node31-029
+Time is Wed Nov 23 22:58:27 GMT 2016
 Directory is /panfs/panasas01/cosc/mc14641/Playground/HPC-CW2
-PBS job ID is 5161206.master.cm.cluster
+PBS job ID is 5165087.master.cm.cluster
 This jobs runs on the following machines:
-node47-021
-[node47-021:20905] MCW rank 0 bound to socket 0[core 0-3]: [B B B B . . . .][. . . . . . . .]
-[node47-021:20905] MCW rank 1 bound to socket 0[core 4-7]: [. . . . B B B B][. . . . . . . .]
-[node47-021:20905] MCW rank 2 bound to socket 1[core 0-3]: [. . . . . . . .][B B B B . . . .]
-[node47-021:20905] MCW rank 3 bound to socket 1[core 4-7]: [. . . . . . . .][. . . . B B B B]
-here 
-here 
-here 
-here 
-INDEX: t: 256 b: 0 l: 0 r: 1024 rk: 0 
-t: 1 b: 3 l: 0 r: 0 rk: 0 
-INDEX: t: 512 b: 256 l: 0 r: 1024 rk: 1 
-t: 2 b: 0 l: 1 r: 1 rk: 1 
-INDEX: t: 768 b: 512 l: 0 r: 1024 rk: 2 
-t: 3 b: 1 l: 2 r: 2 rk: 2 
-INDEX: t: 1024 b: 768 l: 0 r: 1024 rk: 3 
-t: 0 b: 2 l: 3 r: 3 rk: 3 
+node31-029 node31-032 node31-031 node31-030
+[node31-029:64875] MCW rank 4 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
+[node31-029:64875] MCW rank 5 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
+[node31-029:64875] MCW rank 6 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
+[node31-029:64875] MCW rank 7 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
+[node31-029:64875] MCW rank 0 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
+[node31-029:64875] MCW rank 1 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
+[node31-029:64875] MCW rank 2 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
+[node31-029:64875] MCW rank 3 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
+[node31-032:89571] MCW rank 14 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
+[node31-032:89571] MCW rank 15 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
+[node31-032:89571] MCW rank 8 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
+[node31-032:89571] MCW rank 9 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
+[node31-032:89571] MCW rank 10 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
+[node31-032:89571] MCW rank 11 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
+[node31-032:89571] MCW rank 12 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
+[node31-032:89571] MCW rank 13 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
+[node31-031:126100] MCW rank 20 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
+[node31-031:126100] MCW rank 21 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
+[node31-031:126100] MCW rank 22 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
+[node31-031:126100] MCW rank 23 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
+[node31-031:126100] MCW rank 16 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
+[node31-031:126100] MCW rank 17 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
+[node31-031:126100] MCW rank 18 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
+[node31-031:126100] MCW rank 19 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
+[node31-030:14995] MCW rank 28 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
+[node31-030:14995] MCW rank 29 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
+[node31-030:14995] MCW rank 30 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
+[node31-030:14995] MCW rank 31 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
+[node31-030:14995] MCW rank 24 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
+[node31-030:14995] MCW rank 25 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
+[node31-030:14995] MCW rank 26 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
+[node31-030:14995] MCW rank 27 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
 ==done==
-Elapsed time:			45.410837 (s)
-Elapsed user CPU time:		181.488409 (s)
-Elapsed system CPU time:	0.208968 (s)
-==done==
-Elapsed time:			45.700256 (s)
-Elapsed user CPU time:		182.726221 (s)
-Elapsed system CPU time:	0.144977 (s)
-==done==
-Elapsed time:			45.766743 (s)
-Elapsed user CPU time:		182.807209 (s)
-Elapsed system CPU time:	0.206968 (s)
-WRITE VALUES
-==done==
-Elapsed time:			45.878368 (s)
-Elapsed user CPU time:		183.253141 (s)
-Elapsed system CPU time:	0.211967 (s)
-
- recieved: 1
-WRITE VALUES
-
- recieved: 2
-WRITE VALUES
-
- recieved: 3
-WRITE VALUES
+Elapsed time:			13.887087 (s)
+Elapsed user CPU time:		27.345842 (s)
+Elapsed system CPU time:	0.372943 (s)

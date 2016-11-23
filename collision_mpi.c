@@ -9,10 +9,10 @@ float collision_mpi(const t_param params, t_speed* cells, t_speed* tmp_cells, in
      ** the propagate step and so values of interest
      ** are in the scratch-space grid */
 
-    halo_top_y(params, cells, tmp_cells, mpi_params, &tot_u, mpi_halos.top_y,mpi_halo_snd,obstacles, 0, mpi_params.ny - 2,mpi_params.ny - 1);
-    halo_bottom_y(params, cells, tmp_cells, mpi_params, &tot_u, mpi_halos.bottom_y, mpi_halo_snd, obstacles, 1, mpi_params.ny - 1,0);
+    tot_u += halo_top_y(params, cells, tmp_cells, mpi_params, mpi_halos.top_y,mpi_halo_snd,obstacles, 0, mpi_params.ny - 2,mpi_params.ny - 1);
+    tot_u += halo_bottom_y(params, cells, tmp_cells, mpi_params, mpi_halos.bottom_y, mpi_halo_snd, obstacles, 1, mpi_params.ny - 1,0);
 
-    #pragma omp parallel for simd reduction(+:tot_u) schedule(static) num_threads(4)
+    #pragma omp parallel for simd reduction(+:tot_u) schedule(static) num_threads(2)
     for (int ii = 1; ii < mpi_params.ny - 1; ii++)
     {
         int y_s = ii - 1; // could move up
@@ -137,13 +137,15 @@ float collision_mpi(const t_param params, t_speed* cells, t_speed* tmp_cells, in
 }
 
 
-void halo_top_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii)
+float halo_top_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii)
 {
     /* compute local density total */
     static const float d1 = 1 / 36.0f;
+    float tot_u = 0.0f;    /* accumulated magnitudes of velocity for each cell */
+
 
     
-    #pragma omp parallel for simd schedule(static) num_threads(4)
+    #pragma omp parallel for simd reduction(+:tot_u) schedule(static) num_threads(2)
     for (int jj = 0; jj < mpi_params.nx; jj++)
     {
         int index = ii * mpi_params.nx + jj;
@@ -258,22 +260,21 @@ void halo_top_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_i
             // --------------av_velocity-----------------------------------------------
             
             /* accumulate the norm of x- and y- velocity components */
-            *tot_u += sqrt((u_x * u_x) + (u_y * u_y));
+            tot_u += sqrt((u_x * u_x) + (u_y * u_y));
         }
     }
-    
-    
+    return tot_u;
 }
 
-void halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells, mpi_index mpi_params, float* tot_u, t_buffer* bottom_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii)
+float halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells, mpi_index mpi_params, t_buffer* bottom_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii)
 {
     /* compute local density total */
     static const float d1 = 1 / 36.0f;
-    
-    int buffer_index = mpi_params.nx*(mpi_params.ny - 1);
+    float tot_u = 0.0f;    /* accumulated magnitudes of velocity for each cell */
+
     
 
-    #pragma omp parallel for simd schedule(static) num_threads(4)
+    #pragma omp parallel for simd reduction(+:tot_u) schedule(static) num_threads(2)
     for (int jj = 0; jj < mpi_params.nx; jj++)
     {
         int index = ii * mpi_params.nx + jj;
@@ -300,11 +301,11 @@ void halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells, mpi
             tmp_cells[index].speeds[1] = cells[x_e].speeds[3];
             tmp_cells[index].speeds[2] = cells[y_n * mpi_params.nx + jj].speeds[4];
             tmp_cells[index].speeds[3] = cells[x_w].speeds[1];
-            snd_buffer.bottom_y[jj].speeds[0] = tmp_cells[index].speeds[4] = bottom_y_buffer[y_s * mpi_params.nx + jj - buffer_index].speeds[0];
+            snd_buffer.bottom_y[jj].speeds[0] = tmp_cells[index].speeds[4] = bottom_y_buffer[jj].speeds[0];
             tmp_cells[jj].speeds[5] = cells[y_n * mpi_params.nx + x_e].speeds[7];
             tmp_cells[jj].speeds[6] = cells[y_n * mpi_params.nx + x_w].speeds[8];
-            snd_buffer.bottom_y[index].speeds[1] = tmp_cells[index].speeds[7] = bottom_y_buffer[y_s * mpi_params.nx + x_w - buffer_index].speeds[1];
-            snd_buffer.bottom_y[index].speeds[2] = tmp_cells[index].speeds[8] = bottom_y_buffer[y_s * mpi_params.nx + x_e - buffer_index].speeds[2];
+            snd_buffer.bottom_y[index].speeds[1] = tmp_cells[index].speeds[7] = bottom_y_buffer[x_w ].speeds[1];
+            snd_buffer.bottom_y[index].speeds[2] = tmp_cells[index].speeds[8] = bottom_y_buffer[x_e].speeds[2];
         }
         // ----------------END--------------------------------------------
         else
@@ -394,10 +395,10 @@ void halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells, mpi
             // --------------av_velocity-----------------------------------------------
             
             /* accumulate the norm of x- and y- velocity components */
-            *tot_u += sqrt((u_x * u_x) + (u_y * u_y));
+            tot_u += sqrt((u_x * u_x) + (u_y * u_y));
         }
     }
-    
+    return tot_u;
 }
 
 
