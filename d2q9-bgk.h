@@ -82,6 +82,11 @@ typedef struct
 
 typedef struct
 {
+    float speeds[3];
+} t_buffer;
+
+typedef struct
+{
     int mpi_rank;
     int top_y;
     int bottom_y;
@@ -99,10 +104,10 @@ typedef struct
 
 typedef struct
 {
-    t_speed* top_y;
-    t_speed* bottom_y;
-    t_speed* left_x;
-    t_speed* right_x;
+    t_buffer* top_y;
+    t_buffer* bottom_y;
+    t_buffer* left_x;
+    t_buffer* right_x;
 } mpi_halo;
 
 
@@ -145,13 +150,13 @@ int initialise_mpi(const char* obstaclefile,
                    int** obstacles_ptr, float** av_vels_ptr, mpi_index mpi_indexA);
 void initialise_mpi_halos(mpi_index mpi_indexA, mpi_halo* mpi_halo_snd, mpi_halo* mpi_halo_rcv);
 
-void halo_left_x(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_speed* left_x_buffer, int* obstacles, int y_n, int y_s, int x_e, int x_w, int ii, int jj);
-void halo_right_x(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_speed* left_x_buffer, int* obstacles, int y_n, int y_s, int x_e, int x_w, int ii, int jj);
-void halo_top_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_speed* top_y_buffer, int* obstacles, int y_n, int y_s, int ii);
-void halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_speed* top_y_buffer, int* obstacles, int y_n, int y_s, int ii);
+void halo_left_x(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* left_x_buffer, int* obstacles, int y_n, int y_s, int x_e, int x_w, int ii, int jj);
+void halo_right_x(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* left_x_buffer, int* obstacles, int y_n, int y_s, int x_e, int x_w, int ii, int jj);
+void halo_top_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii);
+void halo_bottom_y(const t_param params, t_speed* cells, t_speed* tmp_cells,  mpi_index mpi_params, float* tot_u, t_buffer* top_y_buffer, mpi_halo snd_buffer, int* obstacles, int y_n, int y_s, int ii);
 
 
-float collision_mpi(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, const int* tot_cells, mpi_index mpi_params, mpi_halo mpi_halos);
+float collision_mpi(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles, const int* tot_cells, mpi_index mpi_params, mpi_halo mpi_halos, mpi_halo mpi_halos_snd);
 void print_cells(const t_param params, t_speed* cells);
 void mpi_final_state(const t_param params, t_speed* cells, int* obstacles, float* av_vels, mpi_index params_mpi, int num_threads, int x_split);
 void distribute_indexes(const t_param params, int world_size, int y_split, int x_split);

@@ -48,6 +48,35 @@ int main(int argc, char* argv[])
     /* iterate for maxIters timesteps */
     gettimeofday(&timstr, NULL);
     tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
+
+    // Fill y buffer top and bottom
+    int sendbuf_y_top_i = 0;
+    int sendbuf_y_bottom_i = 0;
+    
+    for (int ii = 0; ii < params_mpi.ny; ii++)
+    {
+        int y_s = (ii == 0) ? (ii + params_mpi.ny - 1) : (ii - 1); // could move top
+        int y_n = (ii + 1) % params_mpi.ny; // Could move top
+        
+        for (int jj = 0; jj < params_mpi.nx; jj++)
+        {
+            int index = ii * params_mpi.nx + jj;
+            if(ii == 0)
+            {
+                mpi_halos_snd.bottom_y[sendbuf_y_bottom_i].speeds[0] = cells[index].speeds[4];
+                mpi_halos_snd.bottom_y[sendbuf_y_bottom_i].speeds[1] = cells[index].speeds[7];
+                mpi_halos_snd.bottom_y[sendbuf_y_bottom_i].speeds[2] = cells[index].speeds[8];
+                sendbuf_y_bottom_i++;
+            }
+            else if(ii == params_mpi.ny - 1)
+            {
+                mpi_halos_snd.top_y[sendbuf_y_top_i].speeds[0] = cells[index].speeds[2];
+                mpi_halos_snd.top_y[sendbuf_y_top_i].speeds[1] = cells[index].speeds[5];
+                mpi_halos_snd.top_y[sendbuf_y_top_i].speeds[2] = cells[index].speeds[6];
+                sendbuf_y_top_i++;
+            }
+        }
+    }
     
     
     for (int tt = 0; tt < params.maxIters; tt++)
@@ -55,7 +84,7 @@ int main(int argc, char* argv[])
         halo_exchange(params, cells, params_mpi, mpi_halos_snd, mpi_halos_rcv);
         if (params_mpi.top_y == params.ny)
             accelerate_flow(params, cells, obstacles, params_mpi);
-        av_vels[tt] = collision_mpi(params, cells, tmp_cells, obstacles, &tot_cells, params_mpi, mpi_halos_rcv);
+        av_vels[tt] = collision_mpi(params, cells, tmp_cells, obstacles, &tot_cells, params_mpi, mpi_halos_rcv, mpi_halos_snd);
         t_speed* temp = cells;
         cells = tmp_cells;
         tmp_cells = temp;
@@ -176,125 +205,73 @@ void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, m
 {
    MPI_Status status;     /* struct used by MPI_Recv */
    MPI_Request req;
+   MPI_Win win;
+
+
+   // if (params_mpi.mpi_rank == 0){
+   //     float a[2] = {0,0};
+   //     float b[2];
+   //     MPI_Win_create(a,2, MPI_FLOAT, MPI_INFO_NULL, MPI_COMM_WORLD, &win)
+   //     MPI_Get(&mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
+   //     MPI_Get(&b, 2, MPI_FLOAT, params_mpi.nb_bottom_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
+   //     printf("rank: %d rcv: %d\n",params_mpi.mpi_rank, b[1]);
+   // }
+   // if else (params_mpi.mpi_rank == 1){
+   //    float a[2] = {0,1};
+   //    float b[2];
+   //    MPI_Win_create(a,2, MPI_FLOAT, MPI_INFO_NULL, MPI_COMM_WORLD, &win)
+   //    MPI_Get(&b, 2, MPI_FLOAT, params_mpi.nb_bottom_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
+   //    printf("rank: %d rcv: %d\n",params_mpi.mpi_rank, b[1]);
+   // }
+
+
     
-    // Fill y buffer top and bottom
-    int sendbuf_y_top_i = 0;
-    int sendbuf_y_bottom_i = 0;
-    int sendbuf_x_right_i = 0;
-    int sendbuf_x_left_i = 0;
-    
-    for (int ii = 0; ii < params_mpi.ny; ii++)
-    {
-        int y_s = (ii == 0) ? (ii + params_mpi.ny - 1) : (ii - 1); // could move top
-        int y_n = (ii + 1) % params_mpi.ny; // Could move top
-        
-        for (int jj = 0; jj < params_mpi.nx; jj++)
-        {
-            int index = ii * params_mpi.nx + jj;
-            if(ii == 0)
-            {
-                for(int k = 0; k<9; k++){
-                    mpi_halo_snd.bottom_y[sendbuf_y_bottom_i].speeds[k] = cells[index].speeds[k];
-                }
-                sendbuf_y_bottom_i++;
-            }
-            else if(ii == params_mpi.ny - 1)
-            {
-                for(int k = 0; k<9; k++){
-                    mpi_halo_snd.top_y[sendbuf_y_top_i].speeds[k] = cells[index].speeds[k];
-                }
-                sendbuf_y_top_i++;
-            }
-            else if(jj == params_mpi.left_x){
-                for(int k = 0; k<9; k++){
-                    mpi_halo_snd.left_x[sendbuf_x_left_i].speeds[k] = cells[index].speeds[k];
-                    
-                }
-                sendbuf_x_left_i++;
-            }
-            else if(jj == params_mpi.right_x - 1){
-                for(int k = 0; k<9; k++){
-                    mpi_halo_snd.right_x[sendbuf_x_right_i].speeds[k] = cells[index].speeds[k];
-                    
-                }
-                sendbuf_x_right_i++;
-            }
-        }
-    }
-    
-    int length_y_halo = (params_mpi.right_x - params_mpi.left_x);
-    
-   if (params_mpi.mpi_rank != 0) {  /* this is _NOT_ the master process */
+   if ((params_mpi.mpi_rank % 2) != 0) {  /* this is _NOT_ the master process */
        
-       
-       // MPI_Recv(mpi_halo_rcv.left_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_left_x, 1, MPI_COMM_WORLD, &status);
-       // MPI_Ssend(mpi_halo_snd.right_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_right_x, 1, MPI_COMM_WORLD);
-       // // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
-       
-       // MPI_Recv(mpi_halo_rcv.right_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_right_x, 1, MPI_COMM_WORLD, &status);
-       // MPI_Ssend(mpi_halo_snd.left_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_left_x, 1, MPI_COMM_WORLD);
        // // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
        
        
-       MPI_Recv(mpi_halo_rcv.bottom_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-       MPI_Ssend(mpi_halo_snd.top_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+       MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+       MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
        // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
        
-       MPI_Recv(mpi_halo_rcv.top_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-       MPI_Ssend(mpi_halo_snd.bottom_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+       MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+       MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
        // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
 
-       // if (params_mpi.mpi_rank == 3){
-       //  for (int jj = 0; jj < params_mpi.nx; jj++)
-       //  {
-       //      printf("%.12f ", mpi_halo_rcv.top_y[jj].speeds[0]);
-       //  }   
-       //  printf("\n\n");     
-       // }
+       // MPI_Get(&mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, params_mpi.nx*3, MPI_FLOAT, win);
+
        
        
    }
    else {             /* i.e. this is the master process */
        
-       // MPI_Ssend(mpi_halo_snd.right_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_right_x, 1, MPI_COMM_WORLD);
-       // MPI_Recv(mpi_halo_rcv.left_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_left_x, 1, MPI_COMM_WORLD, &status);
-       // // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
-       
-       // MPI_Ssend(mpi_halo_snd.left_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_left_x, 1, MPI_COMM_WORLD);
-       // MPI_Recv(mpi_halo_rcv.right_x, length_y_halo*9, MPI_FLOAT, params_mpi.nb_right_x, 1, MPI_COMM_WORLD, &status);
-       // // printf("sent bottom, recieved top at rank :%d\n", params_mpi.mpi_rank);
-       
-       MPI_Ssend(mpi_halo_snd.top_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-       MPI_Recv(mpi_halo_rcv.bottom_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+       MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+       MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
        // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
        
-       MPI_Ssend(mpi_halo_snd.bottom_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-       MPI_Recv(mpi_halo_rcv.top_y, length_y_halo*9, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-       // printf("sent bottom, recieved top at rank :%d\n", params_mpi.mpi_rank);
-        //       for (int jj = 0; jj < params_mpi.nx; jj++)
-        // {
-        //     printf("%.12f ", mpi_halo_rcv.bottom_y[jj].speeds[0]);
-        // }   
-        // printf("\n\n");     
-        // for (int jj = 0; jj < params_mpi.nx; jj++)
-        // {
-        //     printf("%.12f ", mpi_halo_snd.bottom_y[jj].speeds[0]);
-        // }
+       MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+       MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+
+       // float a[2] = {0,0};
+       // MPI_Win_create(a,2, MPI_FLOAT, MPI_INFO_NULL, MPI_COMM_WORLD, &win)
+
+
        
    }
 }
 
 void initialise_mpi_halos(mpi_index mpi_params, mpi_halo* mpi_halo_snd, mpi_halo* mpi_halo_rcv){
     
-    mpi_halo_snd->top_y = malloc(sizeof(t_speed) * (mpi_params.right_x - mpi_params.left_x));
-    mpi_halo_snd->bottom_y = malloc(sizeof(t_speed) * (mpi_params.right_x - mpi_params.left_x));
-    mpi_halo_snd->right_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
-    mpi_halo_snd->left_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
+    mpi_halo_snd->top_y = malloc(sizeof(t_buffer) * (mpi_params.right_x - mpi_params.left_x));
+    mpi_halo_snd->bottom_y = malloc(sizeof(t_buffer) * (mpi_params.right_x - mpi_params.left_x));
+    // mpi_halo_snd->right_x = malloc(sizeof(t_buffer) * (mpi_params.top_y - mpi_params.bottom_y));
+    // mpi_halo_snd->left_x = malloc(sizeof(t_buffer) * (mpi_params.top_y - mpi_params.bottom_y));
     
-    mpi_halo_rcv->top_y = malloc(sizeof(t_speed) * (mpi_params.right_x - mpi_params.left_x));
-    mpi_halo_rcv->bottom_y = malloc(sizeof(t_speed) * (mpi_params.right_x - mpi_params.left_x));
-    mpi_halo_rcv->right_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
-    mpi_halo_rcv->left_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
+    mpi_halo_rcv->top_y = malloc(sizeof(t_buffer) * (mpi_params.right_x - mpi_params.left_x));
+    mpi_halo_rcv->bottom_y = malloc(sizeof(t_buffer) * (mpi_params.right_x - mpi_params.left_x));
+    // mpi_halo_rcv->right_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
+    // mpi_halo_rcv->left_x = malloc(sizeof(t_speed) * (mpi_params.top_y - mpi_params.bottom_y));
 }
 
 

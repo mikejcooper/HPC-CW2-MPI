@@ -1,42 +1,42 @@
-Running on host node31-039
-Time is Tue Nov 22 17:38:25 GMT 2016
+Running on host node47-021
+Time is Wed Nov 23 14:44:08 GMT 2016
 Directory is /panfs/panasas01/cosc/mc14641/Playground/HPC-CW2
-PBS job ID is 5151995.master.cm.cluster
+PBS job ID is 5161206.master.cm.cluster
 This jobs runs on the following machines:
-node31-039
-[node31-039:48529] MCW rank 0 bound to socket 0[core 0-3]: [B B B B . . . .][. . . . . . . .]
-[node31-039:48529] MCW rank 1 bound to socket 0[core 4-7]: [. . . . B B B B][. . . . . . . .]
-[node31-039:48529] MCW rank 2 bound to socket 1[core 0-3]: [. . . . . . . .][B B B B . . . .]
-[node31-039:48529] MCW rank 3 bound to socket 1[core 4-7]: [. . . . . . . .][. . . . B B B B]
+node47-021
+[node47-021:20905] MCW rank 0 bound to socket 0[core 0-3]: [B B B B . . . .][. . . . . . . .]
+[node47-021:20905] MCW rank 1 bound to socket 0[core 4-7]: [. . . . B B B B][. . . . . . . .]
+[node47-021:20905] MCW rank 2 bound to socket 1[core 0-3]: [. . . . . . . .][B B B B . . . .]
+[node47-021:20905] MCW rank 3 bound to socket 1[core 4-7]: [. . . . . . . .][. . . . B B B B]
 here 
 here 
 here 
 here 
-INDEX: t: 1024 b: 768 l: 0 r: 1024 rk: 3 
-t: 0 b: 2 l: 3 r: 3 rk: 3 
 INDEX: t: 256 b: 0 l: 0 r: 1024 rk: 0 
 t: 1 b: 3 l: 0 r: 0 rk: 0 
 INDEX: t: 512 b: 256 l: 0 r: 1024 rk: 1 
 t: 2 b: 0 l: 1 r: 1 rk: 1 
 INDEX: t: 768 b: 512 l: 0 r: 1024 rk: 2 
 t: 3 b: 1 l: 2 r: 2 rk: 2 
+INDEX: t: 1024 b: 768 l: 0 r: 1024 rk: 3 
+t: 0 b: 2 l: 3 r: 3 rk: 3 
 ==done==
-Elapsed time:			63.233260 (s)
-Elapsed user CPU time:		223.350045 (s)
-Elapsed system CPU time:	1.129828 (s)
+Elapsed time:			45.410837 (s)
+Elapsed user CPU time:		181.488409 (s)
+Elapsed system CPU time:	0.208968 (s)
 ==done==
-Elapsed time:			63.233347 (s)
-Elapsed user CPU time:		222.936108 (s)
-Elapsed system CPU time:	1.373791 (s)
+Elapsed time:			45.700256 (s)
+Elapsed user CPU time:		182.726221 (s)
+Elapsed system CPU time:	0.144977 (s)
 ==done==
-Elapsed time:			63.233314 (s)
-Elapsed user CPU time:		223.661998 (s)
-Elapsed system CPU time:	1.216815 (s)
-==done==
-Elapsed time:			63.233260 (s)
-Elapsed user CPU time:		223.947954 (s)
-Elapsed system CPU time:	1.261808 (s)
+Elapsed time:			45.766743 (s)
+Elapsed user CPU time:		182.807209 (s)
+Elapsed system CPU time:	0.206968 (s)
 WRITE VALUES
+==done==
+Elapsed time:			45.878368 (s)
+Elapsed user CPU time:		183.253141 (s)
+Elapsed system CPU time:	0.211967 (s)
 
  recieved: 1
 WRITE VALUES

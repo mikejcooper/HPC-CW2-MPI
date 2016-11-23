@@ -43,7 +43,7 @@ numnodes=`wc $PBS_NODEFILE | awk '{ print $1 }'`
 export OMP_NUM_THREADS=$numnodes
 export KMP_AFFINITY=compact
 
-# export KMP_AFFINITY=granuarity=fine,compact,1,0
+# export KMP_AFFINITY=granularity=fine,compact,1,0
 
 #! Run the parallel MPI executable (nodes*ppn)
 # mpirun -np 4 -loadbalance --cpus-per-proc 16 --report-bindings -machinefile machine.file.$PBS_JOBID $application $options 
