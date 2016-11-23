@@ -245,23 +245,29 @@ void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, m
        
        // // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
        
-        MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-        MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-       // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
-        MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-        MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+       //  MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+       //  MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+       // // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
+       //  MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+       //  MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
         
 
-       
+        MPI_Sendrecv(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
+                     mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
+                     MPI_COMM_WORLD, &status);
+
+        MPI_Sendrecv(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
+                     mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
+                     MPI_COMM_WORLD, &status);
        
    }
    else {             /* i.e. this is the master process */
-       MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-       MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-       // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
+       // MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
+       // MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
+       // // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
        
-        MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-        MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
+       //  MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
+       //  MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
         
         // MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
         //         int dest, int sendtag,
@@ -269,13 +275,13 @@ void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, m
         //         int source, int recvtag,
         //         MPI_Comm comm, MPI_Status *status)
 
-        // MPI_Sendrecv(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
-        //              mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
-        //              MPI_COMM_WORLD, &status);
+        MPI_Sendrecv(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
+                     mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
+                     MPI_COMM_WORLD, &status);
 
-        // MPI_Sendrecv(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
-        //              mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
-        //              MPI_COMM_WORLD, &status);
+        MPI_Sendrecv(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
+                     mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
+                     MPI_COMM_WORLD, &status);
    }
 }
 

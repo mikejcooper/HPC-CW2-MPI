@@ -1,42 +1,10 @@
-Running on host node31-029
-Time is Wed Nov 23 22:58:27 GMT 2016
+Running on host node47-017
+Time is Wed Nov 23 23:24:05 GMT 2016
 Directory is /panfs/panasas01/cosc/mc14641/Playground/HPC-CW2
-PBS job ID is 5165087.master.cm.cluster
+PBS job ID is 5165199.master.cm.cluster
 This jobs runs on the following machines:
-node31-029 node31-032 node31-031 node31-030
-[node31-029:64875] MCW rank 4 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
-[node31-029:64875] MCW rank 5 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
-[node31-029:64875] MCW rank 6 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
-[node31-029:64875] MCW rank 7 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
-[node31-029:64875] MCW rank 0 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
-[node31-029:64875] MCW rank 1 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
-[node31-029:64875] MCW rank 2 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
-[node31-029:64875] MCW rank 3 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
-[node31-032:89571] MCW rank 14 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
-[node31-032:89571] MCW rank 15 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
-[node31-032:89571] MCW rank 8 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
-[node31-032:89571] MCW rank 9 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
-[node31-032:89571] MCW rank 10 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
-[node31-032:89571] MCW rank 11 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
-[node31-032:89571] MCW rank 12 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
-[node31-032:89571] MCW rank 13 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
-[node31-031:126100] MCW rank 20 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
-[node31-031:126100] MCW rank 21 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
-[node31-031:126100] MCW rank 22 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
-[node31-031:126100] MCW rank 23 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
-[node31-031:126100] MCW rank 16 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
-[node31-031:126100] MCW rank 17 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
-[node31-031:126100] MCW rank 18 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
-[node31-031:126100] MCW rank 19 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
-[node31-030:14995] MCW rank 28 bound to socket 1[core 0-1]: [. . . . . . . .][B B . . . . . .]
-[node31-030:14995] MCW rank 29 bound to socket 1[core 2-3]: [. . . . . . . .][. . B B . . . .]
-[node31-030:14995] MCW rank 30 bound to socket 1[core 4-5]: [. . . . . . . .][. . . . B B . .]
-[node31-030:14995] MCW rank 31 bound to socket 1[core 6-7]: [. . . . . . . .][. . . . . . B B]
-[node31-030:14995] MCW rank 24 bound to socket 0[core 0-1]: [B B . . . . . .][. . . . . . . .]
-[node31-030:14995] MCW rank 25 bound to socket 0[core 2-3]: [. . B B . . . .][. . . . . . . .]
-[node31-030:14995] MCW rank 26 bound to socket 0[core 4-5]: [. . . . B B . .][. . . . . . . .]
-[node31-030:14995] MCW rank 27 bound to socket 0[core 6-7]: [. . . . . . B B][. . . . . . . .]
+node47-017 node47-021 node47-020 node47-018
 ==done==
-Elapsed time:			13.887087 (s)
-Elapsed user CPU time:		27.345842 (s)
-Elapsed system CPU time:	0.372943 (s)
+Elapsed time:			13.039072 (s)
+Elapsed user CPU time:		25.955054 (s)
+Elapsed system CPU time:	0.081987 (s)
