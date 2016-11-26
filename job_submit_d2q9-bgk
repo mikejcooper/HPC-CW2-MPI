@@ -49,8 +49,3 @@ export KMP_AFFINITY=compact
 #! Run the parallel MPI executable (nodes*ppn)
 mpirun -np 32 -loadbalance --cpus-per-proc 2 -machinefile machine.file.$PBS_JOBID $application $options 
 
-
-# # ordered ranks
-# mpirun -np 16 -loadbalance --cpus-per-proc 4 --report-bindings -machinefile machine.file.$PBS_JOBID $application $options 
-
-

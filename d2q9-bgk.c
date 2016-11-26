@@ -33,13 +33,7 @@ int main(int argc, char* argv[])
     
     /* initialise our data structures and load values from file */
     initialise_params(paramfile, &params);
-
     mpi(argc, argv, params, &params_mpi, y_split,x_split);
-    
-    //printf("INDEX: t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.top_y, params_mpi.bottom_y, params_mpi.left_x, params_mpi.right_x, params_mpi.mpi_rank);
-    //printf("t: %d b: %d l: %d r: %d rk: %d \n", params_mpi.nb_top_y, params_mpi.nb_bottom_y, params_mpi.nb_left_x, params_mpi.nb_right_x, params_mpi.mpi_rank);
-
-    
     tot_cells = initialise_mpi(obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels, params_mpi);
     initialise_mpi_halos(params_mpi,&mpi_halos_snd, &mpi_halos_rcv, cells);
      
@@ -173,85 +167,8 @@ void accelerate_flow(const t_param params, t_speed* cells, int* obstacles, mpi_i
 void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, mpi_halo mpi_halo_snd, mpi_halo mpi_halo_rcv, int y_split)
 {
    MPI_Status status;     /* struct used by MPI_Recv */
-   MPI_Request req;
-
-  //  MPI_Win win1, win2;
-  //   printf("here \n");
-  //   float a = 1;
-  //   float b = 0;
-
-
-
-  // if (params_mpi.mpi_rank == 0) {
-  //     MPI_Win_create(&a,sizeof(float), 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win1);
-
-  // }
-  // if(params_mpi.mpi_rank == 1){
-  //     MPI_Win_create(MPI_BOTTOM, 0, 1, MPI_INFO_NULL,MPI_COMM_WORLD, &win1);
-  // }
-
-  //  MPI_Win_fence(0,win1);  
-  //  if (params_mpi.mpi_rank == 1){
-      
-  //     int source = 0;
-  //     MPI_Get(&b, 1, MPI_FLOAT, source, 0, 1, MPI_FLOAT, win1);
-  //  }
-  //   MPI_Win_fence(0,win1);  
-    
-  //   printf("rank: %d rcv: %f\n",params_mpi.mpi_rank, b);
-  //   MPI_Win_free(&win1);
-  //   MPI_Win_free(&win2);
-
-
-
-   // if ((params_mpi.mpi_rank % 2) != 0) {  /* this is _NOT_ the master process */
-       
-   //     // // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
-       
-   //    if(params_mpi.mpi_rank != (y_split - 1)){
-   //      MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-   //      MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-   //     // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
-   //      MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-   //      MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-   //     } else {
-   //        MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-   //        MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-   //     }
-       
-   //     // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
-
-       
-       
-   // }
-   // else {             /* i.e. this is the master process */
-   //    if(params_mpi.mpi_rank != 0){
-   //     MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-   //     MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-   //     // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
-       
-   //      MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-   //      MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-   //     } else {
-   //      MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-   //      MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-   //     }
-   // }
-
-
-
 
    if ((params_mpi.mpi_rank % 2) != 0) {  /* this is _NOT_ the master process */
-       
-       // // printf("recieved top, sent bottom at rank :%d\n", params_mpi.mpi_rank);
-       
-       //  MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-       //  MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-       // // printf("recieved bottom, sent top at rank :%d\n", params_mpi.mpi_rank);
-       //  MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-       //  MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-        
-
         MPI_Sendrecv(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
                      mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 0, 
                      MPI_COMM_WORLD, &status);
@@ -259,22 +176,8 @@ void halo_exchange(const t_param params, t_speed* cells, mpi_index params_mpi, m
         MPI_Sendrecv(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
                      mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
                      MPI_COMM_WORLD, &status);
-       
    }
    else {             /* i.e. this is the master process */
-       // MPI_Ssend(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD);
-       // MPI_Recv(mpi_halo_rcv.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD, &status);
-       // // printf("sent top, recieved bottom at rank :%d\n", params_mpi.mpi_rank);
-       
-       //  MPI_Ssend(mpi_halo_snd.bottom_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_bottom_y, 1, MPI_COMM_WORLD);
-       //  MPI_Recv(mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 1, MPI_COMM_WORLD, &status);
-        
-        // MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
-        //         int dest, int sendtag,
-        //         void *recvbuf, int recvcount, MPI_Datatype recvtype,
-        //         int source, int recvtag,
-        //         MPI_Comm comm, MPI_Status *status)
-
         MPI_Sendrecv(mpi_halo_snd.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
                      mpi_halo_rcv.top_y, params_mpi.nx*3, MPI_FLOAT, params_mpi.nb_top_y, 0, 
                      MPI_COMM_WORLD, &status);
