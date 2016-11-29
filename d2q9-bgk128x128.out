@@ -1,0 +1,11 @@
+Running on host node47-013
+Time is Tue Nov 29 15:18:05 GMT 2016
+Directory is /panfs/panasas01/cosc/mc14641/Playground/HPC-CW2
+PBS job ID is 5178387.master.cm.cluster
+This jobs runs on the following machines:
+node47-013 node47-017 node47-016 node47-015
+==done==
+Elapsed time:			0.849986 (s)
+Elapsed user CPU time:		1.710739 (s)
+Elapsed system CPU time:	0.031995 (s)
+Warning: Permanently added 'node47-013,10.131.1.13' (RSA) to the list of known hosts.

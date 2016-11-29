@@ -1,0 +1,10 @@
+Running on host node31-038
+Time is Tue Nov 29 15:17:03 GMT 2016
+Directory is /panfs/panasas01/cosc/mc14641/Playground/HPC-CW2
+PBS job ID is 5178376.master.cm.cluster
+This jobs runs on the following machines:
+node31-038 node47-002 node46-002 node31-039
+==done==
+Elapsed time:			4.427776 (s)
+Elapsed user CPU time:		8.825658 (s)
+Elapsed system CPU time:	0.047992 (s)
